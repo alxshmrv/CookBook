@@ -23,6 +23,30 @@ namespace CookBook.Services
             var recipe = _mapper.Map<Recipe>(createRecipeDto);
             await _cookBookDbContext.Recipes.AddAsync(recipe);
             await _cookBookDbContext.SaveChangesAsync();
+
+            var recipeIngredients = new List<RecipeIngredient>();
+            foreach (var ingredientDto in createRecipeDto.Ingredients)
+            {
+                Ingredient newIngredient = null;
+                var ingredient = await _cookBookDbContext.Ingredients
+                    .FirstOrDefaultAsync(i => i.Name.Equals(ingredientDto.Name));
+                if (ingredient == null)
+                {
+                    newIngredient = _mapper.Map<Ingredient>(ingredientDto);
+                    await _cookBookDbContext.Ingredients.AddAsync(newIngredient);
+                    await _cookBookDbContext.SaveChangesAsync();
+                }
+                var recipeIngredient = new RecipeIngredient
+                {
+                    RecipeId = recipe.Id,
+                    IngredientId = ingredient?.Id ?? newIngredient.Id,
+                    Quantity = ingredientDto.Quantity,
+                    Unit = ingredientDto.Unit
+                };
+                recipeIngredients.Add(recipeIngredient);
+            }
+            await _cookBookDbContext.RecipeIngredients.AddRangeAsync(recipeIngredients);
+            await _cookBookDbContext.SaveChangesAsync();
             return recipe.Id;
         }
 

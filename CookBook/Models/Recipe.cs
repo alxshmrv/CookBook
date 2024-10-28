@@ -7,7 +7,7 @@
         public string Description { get; set; } = default!;
         public string Algorithm { get; set; } = default!;
         public RecipeCategory RecipeCategory { get; set; }
-        public List<Ingredient>? Ingredients { get; set; } // убрать nullable
+        public ICollection<RecipeIngredient> RecipeIngredients { get; set; } = new List<RecipeIngredient>();
         // public User User { get; set; }
         public int Score { get; set; }
     }
