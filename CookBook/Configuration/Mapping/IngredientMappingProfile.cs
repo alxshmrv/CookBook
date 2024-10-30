@@ -8,8 +8,6 @@ namespace CookBook.Configuration.Mapping
     {
         public IngredientMappingProfile()
         {
-            CreateMap<Ingredient, IngredientVm>();
-
             CreateMap<IngredientDto, Ingredient>()
                 .ForMember(dest => dest.Id, source => source.Ignore())
                 .ForMember(dest => dest.RecipeIngredients, source => source.Ignore())

@@ -7,8 +7,8 @@
         public string Description { get; set; } = default!;
         public string Algorithm { get; set; } = default!;
         public RecipeCategory RecipeCategory { get; set; }
-        public ICollection<RecipeIngredient> RecipeIngredients { get; set; } = new List<RecipeIngredient>();
+        public ICollection<RecipeIngredient>? RecipeIngredients { get; set; }
         // public User User { get; set; }
-        public int Score { get; set; }
+        public decimal Score { get; set; } = default;
     }
 }
