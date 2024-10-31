@@ -12,8 +12,6 @@ namespace CookBook.Configuration.Mapping
                 .ForMember(dest => dest.Id, source => source.Ignore())
                 .ForMember(dest => dest.RecipeIngredients, source => source.Ignore())
                 .ForMember(dest => dest.Name, source => source.MapFrom(s => s.Name.Trim()));
-
-
         }
     }
 }

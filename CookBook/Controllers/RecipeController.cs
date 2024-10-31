@@ -15,10 +15,10 @@ namespace CookBook.Controllers
             _recipeRepository = recipeRepository;
         }
         [HttpGet]
-        public async Task<ActionResult<ListOfRecipes>> GetAllRecipes()
+        public async Task<ActionResult<ListOfRecipes>> GetAllRecipes([FromQuery] List<RecipeCategory> categoryFilter)
         {
-            var listOfRecipes = await _recipeRepository.GetAllRecipesAsync();
-            return listOfRecipes;
+            var listOfRecipes = await _recipeRepository.GetAllRecipesAsync(categoryFilter);
+            return Ok(listOfRecipes);
         }
         [HttpGet("by_id")]
         public async Task<ActionResult<RecipeVm>> GetRecipeById(int id)

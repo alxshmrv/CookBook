@@ -5,7 +5,7 @@ namespace CookBook.Abstractions
 {
     public interface IRecipeRepository
     {
-        Task<ListOfRecipes> GetAllRecipesAsync();
+        Task<ListOfRecipes> GetAllRecipesAsync(List<RecipeCategory> categoryFilter);
         Task<RecipeVm> GetRecipeAsync(int id);
         Task<int> AddRecipeAsync(CreateRecipeDto createRecipeDto);
         Task UpdateRecipeAsync(UpdateRecipeDto updateRecipeDto, int Id);

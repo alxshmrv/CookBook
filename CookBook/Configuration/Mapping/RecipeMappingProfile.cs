@@ -14,13 +14,6 @@ namespace CookBook.Configuration.Mapping
             CreateMap<IEnumerable<Recipe>, ListOfRecipes>()
                 .ForCtorParam(nameof(ListOfRecipes.Recipes),
                 source => source.MapFrom(recipeList => recipeList.ToList()));
-
-            CreateMap<UpdateRecipeDto, Recipe>()
-                .ForMember(dest => dest.Score, opt => opt.Ignore())
-                .ForMember(dest => dest.Id, opt => opt.Ignore())
-                .ForMember(dest => dest.Name, source => source.MapFrom(s => s.Name.Trim())
-                );
-
         }
     }
 }

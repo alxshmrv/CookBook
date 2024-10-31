@@ -32,28 +32,7 @@ namespace CookBook.Services
 
             var newIgredients = new List<Ingredient>();
 
-            foreach (var ingredientDto in createRecipeDto.Ingredients)
-            {
-                Ingredient newIngredient = null;
-                var ingredient = await _cookBookDbContext.Ingredients
-                    .FirstOrDefaultAsync(i => i.Name.Equals(ingredientDto.Name));
-                if (ingredient == null)
-                {
-                    newIngredient = _mapper.Map<Ingredient>(ingredientDto);
-                    newIngredient.Id = GenerateId();
-                    newIgredients.Add(newIngredient);
-                }
-                var recipeIngredient = new RecipeIngredient
-                {
-                    RecipeId = recipe.Id,
-                    Recipe = recipe,
-                    IngredientId = ingredient?.Id ?? newIngredient.Id,
-                    Ingredient = ingredient ?? newIngredient,
-                    Quantity = ingredientDto.Quantity,
-                    Unit = ingredientDto.Unit
-                };
-                recipe.RecipeIngredients.Add(recipeIngredient);
-            }
+            await AddIngredientsToRecipeAsync(createRecipeDto.Ingredients, recipe, newIgredients);
 
             await _cookBookDbContext.Recipes.AddAsync(recipe);
             await _cookBookDbContext.Ingredients.AddRangeAsync(newIgredients);
@@ -74,9 +53,14 @@ namespace CookBook.Services
 
         }
 
-        public async Task<ListOfRecipes> GetAllRecipesAsync()
+        public async Task<ListOfRecipes> GetAllRecipesAsync(List<RecipeCategory> categoryFilter = null)
         {
-            var recipes = await _cookBookDbContext.Recipes.ToListAsync();
+            var query = _cookBookDbContext.Recipes.AsQueryable();
+            if (categoryFilter != null && categoryFilter.Count > 0)
+            {
+                query = query.Where(r => categoryFilter.Contains(r.RecipeCategory));
+            }
+            var recipes = await query.ToListAsync();
             var listOfRecipes = _mapper.Map<ListOfRecipes>(recipes);
             return listOfRecipes;
         }
@@ -87,26 +71,23 @@ namespace CookBook.Services
                 .Where(r => r.Id == id)
                 .FirstOrDefaultAsync();
 
-            // Если рецепт не найден, возвращаем null или выбрасываем исключение
             if (recipe == null)
             {
-                return null; // или throw new NotFoundException("Recipe not found");
+                return null;
             }
 
-            // Получаем IngredientVm для всех ингредиентов, связанных с рецептом
             var ingredientVms = await _cookBookDbContext.RecipeIngredients
                 .Where(ri => ri.RecipeId == recipe.Id)
                 .Select(ri => new
                 {
-                    IngredientId = ri.IngredientId // Получаем только IngredientId из RecipeIngredients
+                    IngredientId = ri.IngredientId
                 })
                 .Join(_cookBookDbContext.Ingredients,
-                    ri => ri.IngredientId, // Из RecipeIngredients
-                    i => i.Id, // Из Ingredients
-                    (ri, i) => new IngredientVm(i.Id, i.Name)) // Создаем IngredientVm
+                    ri => ri.IngredientId,
+                    i => i.Id,
+                    (ri, i) => new IngredientVm(i.Id, i.Name))
                 .ToListAsync();
 
-            // Создаем RecipeVm с полученными данными
             var recipeVm = new RecipeVm
             {
                 Id = recipe.Id,
@@ -119,18 +100,62 @@ namespace CookBook.Services
 
         public async Task UpdateRecipeAsync(UpdateRecipeDto updateRecipeDto, int id)
         {
-            var oldRecipe = await _cookBookDbContext.Recipes.FirstOrDefaultAsync(recipe => recipe.Id == id);
-            var recipe = _mapper.Map<Recipe>(updateRecipeDto);
-            if (oldRecipe is null)
+            var recipe = await _cookBookDbContext.Recipes
+       .Include(r => r.RecipeIngredients)
+       .FirstOrDefaultAsync(r => r.Id == id);
+
+            if (recipe == null)
             {
                 throw new Exception();
             }
-            oldRecipe.Name = recipe.Name;
-            oldRecipe.Description = recipe.Description;
-            oldRecipe.Algorithm = recipe.Algorithm;
-            oldRecipe.RecipeCategory = recipe.RecipeCategory;
+
+            recipe.Name = updateRecipeDto.Name;
+            recipe.Description = updateRecipeDto.Description;
+            recipe.Algorithm = updateRecipeDto.Algorithm;
+            recipe.RecipeCategory = updateRecipeDto.RecipeCategory;
+
+            _cookBookDbContext.RecipeIngredients.RemoveRange(recipe.RecipeIngredients);
+
+            var newIgredients = new List<Ingredient>();
+
+            await AddIngredientsToRecipeAsync(updateRecipeDto.Ingredients, recipe, newIgredients);
+
+            if (newIgredients != null)
+            {
+            await _cookBookDbContext.Ingredients.AddRangeAsync(newIgredients);
+            }
+
             await _cookBookDbContext.SaveChangesAsync();
         }
+
+        private async Task AddIngredientsToRecipeAsync(ICollection<IngredientDto> ingredients, Recipe recipe, List<Ingredient> newIngredients)
+        {
+            foreach (var ingredientDto in ingredients)
+            {
+                Ingredient newIngredient = null;
+                var ingredient = await _cookBookDbContext.Ingredients
+                    .FirstOrDefaultAsync(i => i.Name.Equals(ingredientDto.Name));
+
+                if (ingredient == null)
+                {
+                    newIngredient = _mapper.Map<Ingredient>(ingredientDto);
+                    newIngredient.Id = GenerateId();
+                    newIngredients.Add(newIngredient);
+                }
+
+                var recipeIngredient = new RecipeIngredient
+                {
+                    RecipeId = recipe.Id,
+                    Recipe = recipe,
+                    IngredientId = ingredient?.Id ?? newIngredient.Id,
+                    Ingredient = ingredient ?? newIngredient,
+                    Quantity = ingredientDto.Quantity,
+                    Unit = ingredientDto.Unit
+                };
+                recipe.RecipeIngredients.Add(recipeIngredient);
+            }
+        }
+
         private static int GenerateId()
         {
             return BitConverter.ToInt32(Guid.NewGuid().ToByteArray(), 0); // Генерация int из GUID

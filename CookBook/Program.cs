@@ -6,7 +6,7 @@ using CookBook;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services
-    .AddInfrastructure()
+    .AddInfrastructure(builder.Configuration)
     .AddApplicationServices();
 
 var app = builder.Build();
