@@ -1,10 +1,12 @@
 ﻿using CookBook.Configuration.Database;
+using CookBook.Configuration.Swagger;
 using CookBook.CookBook_Database;
 using CookBook.Services.Extentions;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using Swashbuckle.AspNetCore.SwaggerGen;
 using System.Reflection;
 
 namespace CookBook
@@ -17,7 +19,8 @@ namespace CookBook
             services.AddControllers();
             services.AddEndpointsApiExplorer();
 
-            services.AddSwaggerGen();
+            services.AddConfiguredSwagger();
+
             services.AddAutoMapper(Assembly.GetExecutingAssembly());
 
             services.Configure<CookBookDbConnectionSettings>(
@@ -39,10 +42,13 @@ namespace CookBook
 
             return services;
         }
-        public static IServiceCollection AddApplicationServices(this IServiceCollection services)
+        public static IServiceCollection AddApplicationServices(this IServiceCollection services, IConfiguration configuration)
         {
             services.AddRecipeRepository();
             services.AddIngredientRepository();
+            services.AddUserRepository();
+            services.AddJwt();
+            services.AddAuth(configuration);
             return services;
         }
     }

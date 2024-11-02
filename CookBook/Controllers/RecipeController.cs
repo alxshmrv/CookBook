@@ -1,25 +1,31 @@
 using CookBook.Abstractions;
 using CookBook.Contracts;
 using CookBook.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CookBook.Controllers
 {
-    [ApiController]
-    [Route("[controller]")]
-    public class RecipeController : ControllerBase
+    public class RecipeController : BaseController
     {
         private readonly IRecipeRepository _recipeRepository;
-        public RecipeController(IRecipeRepository recipeRepository)
+        private readonly IJwtTokenGenerator _jwtTokenGenerator;
+        private readonly IJwtTokensRepository _jwtTokensRepository;
+        public RecipeController(IRecipeRepository recipeRepository,
+            IJwtTokenGenerator jwtTokenGenerator, IJwtTokensRepository jwtTokensRepository)
         {
+            _jwtTokensRepository = jwtTokensRepository;
+            _jwtTokenGenerator = jwtTokenGenerator;
             _recipeRepository = recipeRepository;
         }
-        [HttpGet]
+        [AllowAnonymous]
+        [HttpGet("all_recipes")]
         public async Task<ActionResult<ListOfRecipes>> GetAllRecipes([FromQuery] List<RecipeCategory> categoryFilter)
         {
             var listOfRecipes = await _recipeRepository.GetAllRecipesAsync(categoryFilter);
             return Ok(listOfRecipes);
         }
+        [AllowAnonymous]
         [HttpGet("by_id")]
         public async Task<ActionResult<RecipeVm>> GetRecipeById(int id)
         {
@@ -30,15 +36,18 @@ namespace CookBook.Controllers
             }
             return Ok(recipeVm);
         }
+        [Authorize(Policy = "RecipeOwner")]
         [HttpPost]
         public async Task<ActionResult<int>> AddRecipe(CreateRecipeDto createRecipeDto)
                    => await _recipeRepository.AddRecipeAsync(createRecipeDto);
+        [Authorize(Policy = "RecipeOwner")]
         [HttpPut("{id}")]
         public async Task<ActionResult> UpdateRecipe(int id, UpdateRecipeDto updateRecipeDto)
         {
             await _recipeRepository.UpdateRecipeAsync(updateRecipeDto, id);
             return NoContent();
         }
+        [Authorize(Policy = "RecipeOwner")]
         [HttpDelete]
         public async Task<ActionResult> DeleteRecipe(int id)
         {

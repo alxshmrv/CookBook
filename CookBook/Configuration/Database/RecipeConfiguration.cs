@@ -20,6 +20,11 @@ namespace CookBook.Configuration.Database
             modelBuilder
                 .Property(r => r.Algorithm)
                 .HasMaxLength(4000);
+            modelBuilder
+                .HasOne(r => r.User)
+                .WithMany(u => u.Recipes)
+                .HasForeignKey(r => r.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }
